@@ -1,22 +1,47 @@
 import { Box, Text, TextField, Image, Button } from '@skynexui/components';
 import React from 'react';
 import appConfig from '../config.json';
+import { createClient } from '@supabase/supabase-js';
+const supabaseConfig = require('../supabase-config.json');
+
+const SUPABASE_URL = supabaseConfig.supabase.url;
+const SUPABASE_ANON_KEY = supabaseConfig.supabase.anonkey;
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export default function ChatPage() {
 
     const [mensagem, setMensagem] = React.useState('');
     const [listaDeMensagens, setListaDeMensagens] = React.useState([]);
+
+    React.useEffect(() => {
+        supabaseClient
+            .from('mensagens')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .then(({ data }) => {
+                setListaDeMensagens(data);
+            });
+    }, []);
     
     function handleNovaMensagem(novaMensagem) {
         const mensagem = {
-            id: listaDeMensagens.length + 1,
+            // id: listaDeMensagens.length + 1, // melhor usar o id do banco de dados
             de: 'defreitasabner',
             texto: novaMensagem
         }
-        setListaDeMensagens([
-            mensagem,
-            ...listaDeMensagens
-        ]);
+
+        supabaseClient
+            .from('mensagens')
+            .insert([
+                mensagem
+            ])
+            .then(({ data }) => {
+                setListaDeMensagens([
+                    data[0],
+                    ...listaDeMensagens
+                ]);
+            });
+
         setMensagem('');
     }
 
